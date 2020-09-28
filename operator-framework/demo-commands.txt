@@ -1,0 +1,36 @@
+curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/0.16.1/install.sh | bash -s 0.16.1
+kubectl get namespace
+kubectl create -f https://operatorhub.io/install/nexus-operator-m88i.yaml
+kubectl get csv -n operators -w
+kubectl get all -n operators
+kubectl create namespace nexus-demo
+
+-----
+echo "apiVersion: apps.m88i.io/v1alpha1
+kind: Nexus
+metadata:
+  name: nexus3
+spec:
+  replicas: 1
+  persistence:
+    persistent: true
+  useRedHatImage: false" | kubectl -n operators apply -f -
+nexus.apps.m88i.io/nexus3 created
+-----
+
+kubectl -n operators get all
+
+-----
+kubectl -n operators edit nexus/nexus3
+# (output omitted)
+spec:
+  # (output omitted)
+  networking:
+    expose: true
+    exposeAs: NodePort
+    nodePort: 30031
+  # (output omitted)
+-----
+
+kubectl -n operators describe service/nexus3 | grep NodePort
+curl -i $(minikube ip):30031/service/rest/v1/status
